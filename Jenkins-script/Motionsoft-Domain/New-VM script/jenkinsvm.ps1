@@ -3,7 +3,7 @@
 # This is for Creating new VM-machines in RK-Vcenter only via jenkins server only(Dont use this script locally from any jump server)
 
 # Befor running this script need to do two tasks.
-# Fisrt task: Check the VMware-PowerCli module is installed or not in jump server(Refer one word file "VM automation" which will be in same folder.)
+# Fisrt task: Check the VMware-PowerCli module is installed or not in jump server (Refer one word file "VM automation" which will be in same folder only follow those steps for VM-PowerCLI Installation.)
 # Second task: You dont have to put your username and password again and again so Pls Run "GetCredentials" script which is in same folder.
 
 # As per Script, First You have to make Auto.csv file as per sample csv sheet under same location like below.

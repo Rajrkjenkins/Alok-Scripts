@@ -1,6 +1,6 @@
 # this Script is for RK-Vcenter and you can run it from any jump server to create new VMs.
 # Befor running this script need to do two tasks.
-# Fisrt task: Check the VMware-PowerCli module is installed or not in jump server(Refer one word file "VM automation" which will be in same folder.
+# Fisrt task: Check the VMware-PowerCli module is installed or not in jump server(Refer one word file "VM automation" which will be in same folder only follow those steps for VM-PowerCLI Installation.)
 # Second task: You dont have to put your username and password again and again so Pls Run "GetCredentials" script which is in same folder.
 
 # This Script will not work in Jenkins server.only will be work on jump server.
