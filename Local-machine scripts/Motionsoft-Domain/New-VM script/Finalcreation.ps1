@@ -1,4 +1,14 @@
-ï»¿$Autocsv = Import-CSV "c:\VM\Auto.csv"
+# this Script is for RK-Vcenter and you can run it from any jump server to create new VMs.
+# Befor running this script need to do two tasks.
+# Fisrt task: Check the VMware-PowerCli module is installed or not in jump server(Refer one word file "VM automation" which will be in same folder.
+# Second task: You dont have to put your username and password again and again so Pls Run "GetCredentials" script which is in same folder.
+
+# This Script will not work in Jenkins server.only will be work on jump server.
+
+
+# Here you have to put all your configuration into Auto.csv file which you can keep at any places but Always put that location below.
+
+$Autocsv = Import-CSV "C:\Users\Administrator\Documents\Auto.csv"  #put your file location
 
 ForEach ($Item in $Autocsv)
 {
@@ -29,7 +39,6 @@ ForEach ($Item in $Autocsv)
     $guestpassword = $Item. ("guestpassword")
     $IP = $Item. ("IP")
     $NewName = $Item. ("NewName")
-    $localUser = $Item. ("localUser")
     $VM_prefix = $Item. ("VM_prefix")
 
     write-Output "VcenterServer: $VcenterServer"
@@ -58,20 +67,25 @@ ForEach ($Item in $Autocsv)
     write-Output "guestpassword: $guestpassword"
     write-Output "IP: $IP"
     write-Output "NewName: $NewName"
-    write-Output "localUser: $localUser"
     write-Output "VM_prefix: $VM_prefix"
 
 
-    Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false
-    write-host "Connecting to vCenter Server $VcenterServer" -foreground green
+    # Below command is for Certification authentification of PowerCLI
 
+    Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false
+
+
+     # Here it will take password from Below location which will be in encrypted Format and only you need to change username.
+
+    $Password = Get-Content “C:\test\password.txt” | ConvertTo-SecureString
+    $Credentials = New-Object System.Management.Automation.PSCredential ("motionsoft\asingh",$Password) # Put your username here
     
 
-    $Password = ConvertTo-SecureString "$($ENV:password)" -AsPlainText -Force
-    $Credentials = New-Object System.Management.Automation.PSCredential ("$ENV:ServerUser", $Password)
 
-
-    Connect-viserver $VcenterServer -Credential $Credentials -WarningAction SilentlyContinue
+     # It will create VM as per given template but later it will be customized as per your filled data into Auto.csv file
+ 
+    write-host "Connecting to vCenter Server $VcenterServer" -foreground green
+    Connect-viserver $VcenterServer -Credential $Credentials -WarningAction 0
     New-VM -Name $VM_prefix -template $template -ResourcePool $ResourcePool -Location $Folder
     Get-VM $VM_prefix |Get-NetworkAdapter|Set-NetworkAdapter -NetworkName $NetworkName -Confirm:$false
     Get-VM $VM_prefix | Set-VM -numcpu $numcpu -Confirm:$false
@@ -83,6 +97,9 @@ ForEach ($Item in $Autocsv)
 
     Sleep -Seconds 60
 
+
+    # Now it will configure Network-Setup for machine.
+
     $netsh = "c:\windows\system32\netsh.exe interface ip set address ""$NetworkName1"" static $IP $Subnet $Gateway"
     Invoke-VMScript -VM $VM_prefix -guestuser $guestuser -guestpassword $guestpassword -ScriptType bat -ScriptText $netsh
 
@@ -93,37 +110,25 @@ ForEach ($Item in $Autocsv)
     $netsh3 = "c:\windows\system32\netsh.exe interface ip add dnsservers ""$NetworkName1"" $DNS2"
     Invoke-VMScript -VM $VM_prefix -guestuser $guestuser -guestpassword $guestpassword -ScriptType bat -ScriptText $netsh3
 
-
     Get-VM $VM_prefix | Restart-VMGuest
 
     Sleep -Seconds 60
 
-    $Password = ConvertTo-SecureString "$($ENV:password)" -AsPlainText -Force
-    $Credentials = New-Object System.Management.Automation.PSCredential ("$ENV:ServerUser", $Password)
 
-
-    $pw = convertto-securestring $guestpassword -AsPlainText -Force
-    $localCredentials = new-object -typename System.Management.Automation.PSCredential -argumentlist $localUser,$pw
+     # Now it will Rename the VMs.
     
-   
-    Rename-Computer -ComputerName $IP -NewName $NewName -LocalCredential $localCredentials -DomainCredential $credentials -restart -Force -PassThru
+    Rename-Computer -ComputerName $IP -NewName $NewName -Restart -Force
 
     Sleep -Seconds 60
 
+    # Here it will take password from Below location which will be in encrypted Format and only you need to change username.
 
-    $Password = ConvertTo-SecureString "$($ENV:password)" -AsPlainText -Force
-    $Credentials = New-Object System.Management.Automation.PSCredential ("$ENV:ServerUser", $Password)
-
-
-    $pw = convertto-securestring $guestpassword -AsPlainText -Force
-    $localCredentials = new-object -typename System.Management.Automation.PSCredential -argumentlist $localUser,$pw
+    $Password = Get-Content “C:\test\password.txt” | ConvertTo-SecureString
+    $Credentials = New-Object System.Management.Automation.PSCredential ("motionsoft\asingh",$Password) # Put your username here
     
 
-    add-computer -computerName $NewName -domainname MOTIONSOFT.com -LocalCredential $localCredentials -Credential $Credentials -restart -force
+    # It will add into Motionsoft.com domain
 
-    write-host "Computer Name is"$NewName  "UserName is"$guestuser "and Password is $guestpassword" -ForegroundColor Yellow
-
-
-    Disconnect-VIServer -Server $VcenterServer -Force -Confirm:$false
+    add-computer -computerName $NewName -domainname MOTIONSOFT.com -Credential $Credentials -restart -force
 
 }
